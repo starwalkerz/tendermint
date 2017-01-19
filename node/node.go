@@ -23,6 +23,7 @@ import (
 	rpccore "github.com/tendermint/tendermint/rpc/core"
 	grpccore "github.com/tendermint/tendermint/rpc/grpc"
 	sm "github.com/tendermint/tendermint/state"
+	txindexer "github.com/tendermint/tendermint/state/tx/indexer"
 	"github.com/tendermint/tendermint/types"
 	"github.com/tendermint/tendermint/version"
 
@@ -106,6 +107,12 @@ func NewNode(config cfg.Config, privValidator *types.PrivValidator, clientCreato
 		consensusState.SetPrivValidator(privValidator)
 	}
 	consensusReactor := consensus.NewConsensusReactor(consensusState, fastSync)
+
+	// Transaction indexing
+	store := dbm.NewDB("tx_indexer", config.GetString("db_backend"), config.GetString("db_dir"))
+	indexer := txindexer.NewKV(store)
+	bcReactor.SetTxIndexer(indexer)
+	consensusState.SetTxIndexer(indexer)
 
 	// Make p2p network switch
 	sw := p2p.NewSwitch(config.GetConfig("p2p"))
